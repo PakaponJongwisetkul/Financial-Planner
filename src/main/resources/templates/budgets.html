@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Budgets</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+
+<body>
+    <nav class="topbar">
+        <div class="brand">Financial Planner</div>
+        <div class="nav-links">
+            <a th:href="@{/}">Dashboard</a>
+            <a th:href="@{/transactions}">Transactions</a>
+            <a th:href="@{/budgets}" class="active">Budgets</a>
+            <a th:href="@{/categories}">Categories</a>
+            <a th:href="@{/profile}">Profile</a>
+            <form th:action="@{/logout}" method="post" class="logout-form">
+                <button type="submit" class="logout-button">Logout</button>
+            </form>
+        </div>
+    </nav>
+
+    <div class="container small-container">
+        <header class="page-header">
+            <div>
+                <p class="eyebrow">Planning</p>
+                <h1>Budget planner</h1>
+            </div>
+        </header>
+
+        <div th:if="${success}" class="alert success" th:text="${success}"></div>
+        <div th:if="${error}" class="alert error" th:text="${error}"></div>
+
+        <section class="panel form-panel">
+            <h3>Add / update budget</h3>
+            <form th:action="@{/budgets/save}" th:object="${budget}" method="post">
+                <input type="hidden" th:field="*{id}">
+                <div class="form-grid">
+                    <label>
+                        Category
+                        <select th:field="*{category}">
+                            <option value="">Select category</option>
+                            <option th:each="category : ${categories}" th:if="${category.type?.name() == 'EXPENSE'}"
+                                th:value="${category.name}" th:text="${category.name}">Category</option>
+                        </select>
+                    </label>
+                    <label>
+                        Budget limit
+                        <input type="number" step="0.01" min="0.01" th:field="*{limitAmount}" required>
+                    </label>
+                    <label>
+                        Month
+                        <input type="month" th:field="*{month}" required>
+                    </label>
+                </div>
+                <button type="submit" class="primary-button">Save budget</button>
+            </form>
+        </section>
+
+        <section class="panel">
+            <div class="panel-header">
+                <h3>Budget overview</h3>
+            </div>
+            <div th:if="${#lists.isEmpty(budgets)}" class="empty-state">
+                <p>No budgets set</p>
+                <span>Add a budget above to start tracking your spending limits</span>
+            </div>
+            <div class="budget-list" th:each="budget : ${budgets}">
+                <div class="budget-row">
+                    <div>
+                        <strong th:text="${budget.category}">Category</strong>
+                        <span th:text="${budget.month}">Month</span>
+                    </div>
+                    <span class="budget-value"
+                        th:text="${'$' + #numbers.formatDecimal(budget.limitAmount, 1, 'COMMA', 2, 'POINT')}">$0.00</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill"
+                        th:style="'width: ' + ${budgetUsage[budget.category] != null ? (budgetUsage[budget.category] > 100 ? 100 : budgetUsage[budget.category]) : 0} + '%'"
+                        th:classappend="${budgetUsage[budget.category] != null && budgetUsage[budget.category] > 100 ? 'over-budget' : ''}">
+                    </div>
+                </div>
+                <div class="usage-text">
+                    <span
+                        th:text="${budgetUsage[budget.category] != null ? budgetUsage[budget.category] + '% used' : '0% used'}">0%
+                        used</span>
+                    <span class="over-budget-warning"
+                        th:if="${budgetUsage[budget.category] != null && budgetUsage[budget.category] > 100}">&#9888;&#65039; Over budget!</span>
+                </div>
+                <div class="inline-actions">
+                    <a class="small-button" th:href="@{/budgets/{id}/edit(id=${budget.id})}">Edit</a>
+                    <form th:action="@{/budgets/{id}/delete(id=${budget.id})}" method="post" class="inline-form"
+                        th:id="'del-bud-' + ${budget.id}">
+                    </form>
+                    <button type="button" class="danger-button"
+                        th:attr="data-form-id='del-bud-' + ${budget.id}"
+                        onclick="openConfirm(this.getAttribute('data-form-id'))">Delete</button>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Confirm delete modal -->
+    <div class="confirm-modal" id="confirmModal">
+        <div class="modal-card">
+            <h3>Confirm Delete</h3>
+            <p>Are you sure you want to delete this budget? This action cannot be undone.</p>
+            <div class="modal-actions">
+                <button class="secondary-button" onclick="closeConfirm()">Cancel</button>
+                <button class="danger-button" id="confirmBtn" onclick="submitConfirm()">Delete</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        let pendingFormId = null;
+        function openConfirm(formId) { pendingFormId = formId; document.getElementById('confirmModal').classList.add('open'); }
+        function closeConfirm() { pendingFormId = null; document.getElementById('confirmModal').classList.remove('open'); }
+        function submitConfirm() { if (pendingFormId) document.getElementById(pendingFormId).submit(); }
+    </script>
+</body>
+
+</html>

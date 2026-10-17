@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+
+<body class="auth-body">
+    <div class="auth-shell">
+        <div class="auth-card">
+            <h1>Financial Planner</h1>
+            <p class="auth-subtitle">Sign in to manage your budget</p>
+
+            <div th:if="${param.error}" class="alert error">Invalid username or password.</div>
+            <div th:if="${param.logout}" class="alert success">You have been logged out.</div>
+            <div th:if="${successMessage}" class="alert success" th:text="${successMessage}"></div>
+            <div th:if="${errorMessage}" class="alert error" th:text="${errorMessage}"></div>
+
+            <form th:action="@{/login}" method="post">
+                <label>
+                    Username
+                    <input type="text" name="username" placeholder="Enter username" required>
+                </label>
+                <label>
+                    Password
+                    <input type="password" name="password" placeholder="Enter password" required>
+                </label>
+                <button type="submit" class="primary-button full-width">Login</button>
+            </form>
+
+            <div class="auth-footer">
+                <span>Need an account?</span>
+                <a th:href="@{/register}">Create one</a>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

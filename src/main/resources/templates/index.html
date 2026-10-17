@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Planner</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+
+<body>
+    <nav class="topbar">
+        <div class="brand">Financial Planner</div>
+        <div class="nav-links">
+            <a th:href="@{/}" class="active">Dashboard</a>
+            <a th:href="@{/transactions}">Transactions</a>
+            <a th:href="@{/budgets}">Budgets</a>
+            <a th:href="@{/categories}">Categories</a>
+            <a th:href="@{/profile}">Profile</a>
+            <form th:action="@{/logout}" method="post" class="logout-form">
+                <button type="submit" class="logout-button">Logout</button>
+            </form>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header class="page-header">
+            <div>
+                <p class="eyebrow">Welcome back, <span
+                        th:text="${currentUser != null ? (currentUser.fullName != null ? currentUser.fullName : currentUser.username) : 'User'}">User</span>
+                </p>
+                <h1>Budget dashboard</h1>
+            </div>
+            <div class="header-actions">
+                <a class="secondary-button" th:href="@{/transactions/export/csv}">Export CSV</a>
+                <a class="primary-button" th:href="@{/transactions}">+ Add transaction</a>
+            </div>
+        </header>
+
+        <section class="summary-grid">
+            <article class="summary-card income">
+                <span>Total income</span>
+                <h2 th:text="${'$' + #numbers.formatDecimal(summary.totalIncome, 1, 'COMMA', 2, 'POINT')}">$0.00</h2>
+            </article>
+            <article class="summary-card expense">
+                <span>Total expenses</span>
+                <h2 th:text="${'$' + #numbers.formatDecimal(summary.totalExpenses, 1, 'COMMA', 2, 'POINT')}">$0.00</h2>
+            </article>
+            <article class="summary-card balance">
+                <span>Balance</span>
+                <h2 th:text="${'$' + #numbers.formatDecimal(summary.balance, 1, 'COMMA', 2, 'POINT')}">$0.00</h2>
+            </article>
+            <article class="summary-card savings">
+                <span>Monthly spending</span>
+                <h2
+                    th:text="${'$' + #numbers.formatDecimal(summary.monthlySpending != null ? summary.monthlySpending : 0, 1, 'COMMA', 2, 'POINT')}">
+                    $0.00</h2>
+            </article>
+        </section>
+
+        <section class="content-grid">
+            <article class="panel">
+                <div class="panel-header">
+                    <h3>Recent transactions</h3>
+                    <a th:href="@{/transactions}">View all</a>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Description</th>
+                            <th>Category</th>
+                            <th>Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:if="${#lists.isEmpty(transactions)}">
+                            <td colspan="4">
+                                <div class="empty-state">
+                                    <p>No transactions yet</p>
+                                    <span>Add your first transaction to get started</span>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr th:each="transaction, iterStat : ${transactions}" th:if="${iterStat.index < 5}">
+                            <td>
+                                <span class="badge"
+                                    th:classappend="${transaction.type?.name() == 'INCOME' ? 'income-badge' : 'expense-badge'}"
+                                    th:text="${transaction.type}">Expense</span>
+                            </td>
+                            <td th:text="${transaction.description}">Description</td>
+                            <td th:text="${transaction.category}">Category</td>
+                            <td th:text="${'$' + #numbers.formatDecimal(transaction.amount, 1, 'COMMA', 2, 'POINT')}">
+                                $0.00</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </article>
+
+            <article class="panel">
+                <div class="panel-header">
+                    <h3>Budget progress</h3>
+                    <a th:href="@{/budgets}">Manage</a>
+                </div>
+                <div class="budget-list" th:each="budget : ${budgets}">
+                    <div class="budget-row">
+                        <div>
+                            <strong th:text="${budget.category}">Category</strong>
+                            <span th:text="${budget.month}">Month</span>
+                        </div>
+                        <span
+                            th:text="${budgetUsage[budget.category] != null ? budgetUsage[budget.category] + '%' : '0%'}">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill"
+                            th:style="'width: ' + ${budgetUsage[budget.category] != null ? (budgetUsage[budget.category] > 100 ? 100 : budgetUsage[budget.category]) : 0} + '%'"
+                            th:classappend="${budgetUsage[budget.category] != null && budgetUsage[budget.category] > 100 ? 'over-budget' : ''}">
+                        </div>
+                    </div>
+                </div>
+            </article>
+        </section>
+
+        <section class="chart-grid">
+            <article class="chart-panel">
+                <div class="panel-header">
+                    <h3>Expenses by Category</h3>
+                </div>
+                <canvas id="expensePieChart" style="max-height:260px;"></canvas>
+            </article>
+            <article class="chart-panel">
+                <div class="panel-header">
+                    <h3>Income vs Expenses (6 months)</h3>
+                </div>
+                <canvas id="monthlyBarChart" style="max-height:260px;"></canvas>
+            </article>
+        </section>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        var expensesByCategory = /*[[${expensesByCategory}]]*/ {};
+        var monthlyTotals = /*[[${monthlyTotals}]]*/ {};
+
+        // Pie chart – Expenses by Category
+        (function () {
+            var ctx = document.getElementById('expensePieChart');
+            if (!ctx) return;
+            var labels = Object.keys(expensesByCategory);
+            var values = Object.values(expensesByCategory);
+            if (labels.length === 0) {
+                ctx.parentElement.innerHTML += '<div class="empty-state"><p>No expense data</p></div>';
+                ctx.style.display = 'none';
+                return;
+            }
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#3b82f6', '#ec4899', '#14b8a6', '#f97316'],
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+        })();
+
+        // Bar chart – Income vs Expenses (6 months)
+        (function () {
+            var ctx = document.getElementById('monthlyBarChart');
+            if (!ctx) return;
+            var labels = Object.keys(monthlyTotals);
+            var incomeData = labels.map(function (k) { return Number(monthlyTotals[k].income) || 0; });
+            var expenseData = labels.map(function (k) { return Number(monthlyTotals[k].expense || monthlyTotals[k].expenses) || 0; });
+            if (labels.length === 0) {
+                ctx.parentElement.innerHTML += '<div class="empty-state"><p>No monthly data</p></div>';
+                ctx.style.display = 'none';
+                return;
+            }
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Income',
+                            data: incomeData,
+                            backgroundColor: '#10b981'
+                        },
+                        {
+                            label: 'Expenses',
+                            data: expenseData,
+                            backgroundColor: '#ef4444'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        })();
+        /*]]>*/
+    </script>
+</body>
+
+</html>

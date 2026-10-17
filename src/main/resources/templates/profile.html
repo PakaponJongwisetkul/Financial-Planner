@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+
+<body>
+    <nav class="topbar">
+        <div class="brand">Financial Planner</div>
+        <div class="nav-links">
+            <a th:href="@{/}">Dashboard</a>
+            <a th:href="@{/transactions}">Transactions</a>
+            <a th:href="@{/budgets}">Budgets</a>
+            <a th:href="@{/categories}">Categories</a>
+            <a th:href="@{/profile}" class="active">Profile</a>
+            <form th:action="@{/logout}" method="post" class="logout-form">
+                <button type="submit" class="logout-button">Logout</button>
+            </form>
+        </div>
+    </nav>
+
+    <div class="container small-container">
+        <header class="page-header">
+            <div>
+                <p class="eyebrow">Account</p>
+                <h1>
+                    Profile
+                    <span class="stat-chip" style="margin-left:0.75rem;">&#64;<span th:text="${user.username}">username</span></span>
+                </h1>
+            </div>
+        </header>
+
+        <div th:if="${success}" class="alert success" th:text="${success}"></div>
+        <div th:if="${error}" class="alert error" th:text="${error}"></div>
+
+        <div class="profile-grid">
+            <!-- Account information -->
+            <section class="panel form-panel">
+                <h3>Account Information</h3>
+                <form th:action="@{/profile/save}" method="post">
+                    <label style="margin-bottom:1rem;">
+                        Full Name
+                        <input type="text" name="fullName" th:value="${user.fullName}" placeholder="Your full name">
+                    </label>
+                    <label style="margin-bottom:1rem;">
+                        Email
+                        <input type="email" name="email" th:value="${user.email}" placeholder="your@email.com">
+                    </label>
+                    <button type="submit" class="primary-button">Save changes</button>
+                </form>
+            </section>
+
+            <!-- Change password -->
+            <section class="panel form-panel">
+                <h3>Change Password</h3>
+                <form th:action="@{/profile/change-password}" method="post">
+                    <label style="margin-bottom:1rem;">
+                        Current Password
+                        <input type="password" name="currentPassword" placeholder="Current password" required>
+                    </label>
+                    <label style="margin-bottom:1rem;">
+                        New Password
+                        <input type="password" name="newPassword" placeholder="New password" required>
+                    </label>
+                    <label style="margin-bottom:1rem;">
+                        Confirm New Password
+                        <input type="password" name="confirmPassword" placeholder="Confirm new password" required>
+                    </label>
+                    <button type="submit" class="primary-button">Update password</button>
+                </form>
+            </section>
+        </div>
+    </div>
+</body>
+
+</html>
